@@ -702,8 +702,7 @@ TabAppearance:CreateButton({
     end
 })
 
-TabAp
-pearance:CreateButton({
+TabAppearance:CreateButton({
     Name = "Biến thành Noob",
     Callback = function()
         ChangeAppearance("Noob")

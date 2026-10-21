@@ -1,3 +1,89 @@
+local LANG, askAgain, T
+
+do
+	local http0 = game:GetService("HttpService")
+	local plr0 = game:GetService("Players").LocalPlayer
+	local data
+	if type(readfile) == "function" and type(isfile) == "function" then
+		pcall(function()
+			if isfile("GlassChat_Settings.json") then
+				data = http0:JSONDecode(readfile("GlassChat_Settings.json"))
+			end
+		end)
+	end
+	askAgain = true
+	if type(data) == "table" then
+		if data.lang == "vi" or data.lang == "en" then
+			LANG = data.lang
+		end
+		if data.askLang == false then
+			askAgain = false
+		end
+	end
+
+	if not LANG or askAgain then
+		local chosen
+		local dontAsk = false
+
+		local function mk(class, props, parent)
+			local o = Instance.new(class)
+			for k, v in pairs(props) do
+				o[k] = v
+			end
+			o.Parent = parent
+			return o
+		end
+
+		local sg = mk("ScreenGui", {Name = "RidKidLang", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 1000}, nil)
+		local okp = pcall(function()
+			sg.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+		end)
+		if not okp or not sg.Parent then
+			sg.Parent = plr0:WaitForChild("PlayerGui")
+		end
+
+		local frame = mk("Frame", {Size = UDim2.new(0, 330, 0, 232), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.25, BorderSizePixel = 0, ClipsDescendants = true}, sg)
+		mk("UICorner", {CornerRadius = UDim.new(0, 18)}, frame)
+		mk("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(184, 132, 38), Color3.fromRGB(34, 22, 8)), Rotation = 90}, frame)
+		mk("UIStroke", {Color = Color3.fromRGB(255, 214, 120), Thickness = 1.6, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, frame)
+
+		mk("TextLabel", {Size = UDim2.new(1, 0, 0, 30), Position = UDim2.new(0, 0, 0, 14), BackgroundTransparency = 1, Text = "RidKid Hub", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 24}, frame)
+		mk("TextLabel", {Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0, 0, 0, 48), BackgroundTransparency = 1, Text = "Chọn ngôn ngữ  •  Choose your language", TextColor3 = Color3.fromRGB(255, 240, 210), Font = Enum.Font.Gotham, TextSize = 13}, frame)
+
+		for i, info in ipairs({{"vi", "Tiếng Việt"}, {"en", "English"}}) do
+			local b = mk("TextButton", {Size = UDim2.new(0, 140, 0, 48), Position = UDim2.new(0, 20 + (i - 1) * 150, 0, 86), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.78, Text = info[2], TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 17, BorderSizePixel = 0}, frame)
+			mk("UICorner", {CornerRadius = UDim.new(0, 12)}, b)
+			mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 1, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, b)
+			b.Activated:Connect(function()
+				chosen = info[1]
+			end)
+		end
+
+		local askBtn = mk("TextButton", {Size = UDim2.new(1, -40, 0, 28), Position = UDim2.new(0, 20, 0, 148), BackgroundTransparency = 1, Text = "[  ]  Không hỏi lại  •  Don't ask again", TextColor3 = Color3.fromRGB(255, 240, 210), Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left}, frame)
+		askBtn.Activated:Connect(function()
+			dontAsk = not dontAsk
+			askBtn.Text = (dontAsk and "[x]  " or "[  ]  ") .. "Không hỏi lại  •  Don't ask again"
+		end)
+
+		mk("TextLabel", {Size = UDim2.new(1, 0, 0, 16), Position = UDim2.new(0, 0, 0, 196), BackgroundTransparency = 1, Text = "Học Làm Script x Tvàn", TextColor3 = Color3.fromRGB(255, 214, 120), Font = Enum.Font.GothamMedium, TextSize = 12}, frame)
+
+		repeat
+			task.wait()
+		until chosen
+
+		LANG = chosen
+		askAgain = not dontAsk
+		sg:Destroy()
+	end
+end
+
+LANG = LANG or "vi"
+T = function(vi, en)
+	if LANG == "en" then
+		return en
+	end
+	return vi
+end
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -2010,4 +2096,275 @@ end)
 
 state.tab = 1
 loadColor()
+refresh()
+local saveLang = LANG
+
+do
+	local EN = {
+		["Màu sắc"] = "Colors", ["Tiller"] = "Tag", ["Gửi tin"] = "Send", ["Nền kính"] = "Glass", ["Chữ"] = "Text", ["Cài đặt"] = "Settings",
+		["Ánh sáng"] = "Light", ["Trời trên"] = "Sky top", ["Trời dưới"] = "Sky bottom", ["Đang chỉnh màu cho"] = "Editing color for",
+		["Phong cách VIP (1 chạm)"] = "VIP styles (1 tap)", ["Vua Vàng"] = "Gold King", ["Quỷ Đỏ"] = "Red Demon", ["Thiên Thần"] = "Angel",
+		["Ninja Tím"] = "Purple Ninja", ["Cầu Vồng"] = "Rainbow", ["Chọn tiller"] = "Choose tag", ["Không"] = "None",
+		["Tiller tự đặt"] = "Custom tag", ["Gõ tiller rồi bấm Enter"] = "Type a tag, then press Enter",
+		["Bảng màu"] = "Color board", ["Màu có sẵn"] = "Preset colors", ["Tinh chỉnh RGB"] = "RGB fine-tune",
+		["Gõ mã màu, ví dụ FF3B3B"] = "Type a color code, e.g. FF3B3B",
+		["Hiệu ứng chữ (hiện trên máy bạn)"] = "Text effects (only you see)", ["Phông chữ (hiện trên máy bạn)"] = "Fonts (only you see)",
+		["Kiểu chữ đặc biệt (người khác thấy)"] = "Special text styles (others see)", ["Mặc định"] = "Default",
+		["Đậm"] = "Bold", ["Nghiêng"] = "Italic", ["Gạch chân"] = "Underline", ["Gạch ngang"] = "Strike", ["Viết hoa"] = "Uppercase",
+		["Viền chữ"] = "Outline", ["Tô nền"] = "Highlight", ["Thường"] = "Normal", ["Đậm nghiêng"] = "Bold italic", ["Viết tay"] = "Script",
+		["Gô-tích"] = "Gothic", ["Máy chữ"] = "Mono", ["Rộng"] = "Wide", ["Tròn"] = "Circle", ["Chữ nhỏ"] = "Small caps",
+		["Chỉ áp dụng cho tin gửi từ ô Gửi tin hoặc tin mẫu. Chữ có dấu tiếng Việt giữ nguyên. Nếu thấy ô vuông thì chọn lại Thường."] = "Only applies to messages sent from the Send box or quick messages. Vietnamese accented letters stay unchanged. If you see squares, switch back to Normal.",
+		["Gửi tin (người khác sẽ thấy)"] = "Send message (others will see)", ["Gõ tin nhắn..."] = "Type a message...", ["Gửi"] = "Send",
+		["Kèm tiller"] = "Attach tag", ["Kênh"] = "Channel", ["Huy hiệu VIP (người khác thấy)"] = "VIP badge (others see)",
+		["Tin nhắn mẫu (chạm để gửi)"] = "Quick messages (tap to send)", ["Thêm tin mẫu..."] = "Add quick message...", ["Thêm"] = "Add", ["Mẹo"] = "Tips",
+		["Gõ /hoclamscriptVip@ trong chat để mở lại bảng sau khi bấm ×. Chỉ tin gửi từ ô Gửi tin hoặc tin mẫu mới kèm huy hiệu, tiller và kiểu chữ đặc biệt cho người khác thấy. Màu chữ chỉ hiện trên máy bạn."] = "Type /hoclamscriptVip@ in chat to reopen the hub after pressing ×. Only messages sent from the Send box or quick messages carry the badge, tag and special text style for others to see. Text colors only show on your device.",
+		["Chọn màu nền kính tự do (chạm là đổi ngay)"] = "Pick any glass color (applies instantly)",
+		["Chọn màu tia nắng tự do (chạm là đổi ngay)"] = "Pick any light-ray color (applies instantly)",
+		["Tông màu nền kính (đỏ, xanh, tím...)"] = "Glass color tones (red, blue, purple...)", ["Nền kính có sẵn"] = "Glass presets",
+		["Ngày & đêm"] = "Day & night", ["Chỉnh bằng RGB"] = "Edit with RGB", ["Màu tia nắng"] = "Light-ray color",
+		["Hiệu ứng ánh sáng của bảng"] = "Hub light effects", ["Tia sáng"] = "Rays", ["Vệt sáng"] = "Light sweep", ["Hạt & sao"] = "Sparkles & stars",
+		["Mây trời"] = "Clouds", ["Độ trong của kính"] = "Glass clarity", ["Đục"] = "Opaque", ["Vừa"] = "Medium", ["Trong"] = "Clear", ["Rất trong"] = "Very clear",
+		["Màu viền và nút (chủ đề)"] = "Border & button color (theme)", ["Nắng Vàng"] = "Sunny Gold", ["Lưu cài đặt"] = "Save settings",
+		["Tự động lưu mọi cài đặt, kể cả màu và hiệu ứng game. Lần sau chạy lại sẽ giữ nguyên."] = "All settings, including colors and game effects, are saved automatically and restored next run.",
+		["Executor của bạn không hỗ trợ lưu file, nên cài đặt sẽ mất khi thoát game."] = "Your executor can't save files, so settings are lost when you leave the game.",
+		["Lưu ngay"] = "Save now", ["Đặt lại tất cả"] = "Reset all", ["Ghi chú"] = "Notes",
+		["Chủ đề chỉ đổi màu viền sáng và các nút đang chọn. Nền kính và tia nắng của bảng nằm ở tab Nền kính. Ánh sáng thật trong game nằm ở tab Game."] = "Themes only change the glowing border and selected buttons. The hub's glass and light rays are in the Glass tab. Real in-game lighting is in the Game tab.",
+		["Hiệu ứng ánh sáng trong game"] = "In-game lighting effects", ["Bật hiệu ứng game"] = "Enable game effects", ["Khôi phục gốc"] = "Restore original",
+		["Chỉ đổi trên máy bạn, người khác không thấy. Mỗi game có ánh sáng riêng nên mức đổi màu có thể khác nhau, vài game tự đặt lại ánh sáng liên tục."] = "Only changes on your device; others can't see it. Each game has its own lighting, so results vary, and some games keep resetting the lighting.",
+		["Màu bầu trời (game)"] = "Sky color (game)", ["Cường độ"] = "Strength", ["Nhẹ"] = "Light", ["Mạnh"] = "Strong",
+		["Màu ánh sáng (game)"] = "Light color (game)", ["Giờ trong game (đổi sắc trời)"] = "Game time (changes sky tone)", ["Khóa giờ"] = "Lock time",
+		["Hiệu ứng ánh sáng game"] = "Game light effects", ["Bloom (tỏa sáng)"] = "Bloom (glow)", ["Tia nắng (SunRays)"] = "Sun rays",
+		["Sương mù"] = "Fog", ["Tắt"] = "Off",
+		["Bình minh"] = "Dawn", ["Sáng"] = "Morning", ["Trưa"] = "Noon", ["Chiều"] = "Afternoon", ["Hoàng hôn"] = "Sunset", ["Đêm"] = "Night", ["Giữ nguyên"] = "Keep",
+		["Đỏ"] = "Red", ["Cam"] = "Orange", ["Vàng"] = "Yellow", ["Chanh"] = "Lime", ["Lục"] = "Green", ["Ngọc"] = "Teal", ["Lơ"] = "Cyan",
+		["Xanh"] = "Blue", ["Chàm"] = "Indigo", ["Tím"] = "Purple", ["Hồng"] = "Pink", ["Bạc"] = "Silver",
+		["Nắng vàng"] = "Golden sun", ["Trưa xanh"] = "Blue noon", ["Đêm sao"] = "Starry night", ["Hoa anh đào"] = "Cherry blossom",
+		["Ngọc bích"] = "Jade", ["Băng giá"] = "Frost",
+		["Phông"] = "Font", ["Kiểu chữ"] = "Text style", ["Huy hiệu"] = "Badge", ["Phong cách"] = "Style", ["Độ trong"] = "Clarity",
+		["Trời game"] = "Game sky", ["Giờ game"] = "Game time",
+		["Đã mở RidKid Hub"] = "RidKid Hub opened", ["Mã màu gồm 6 ký tự 0-9, A-F"] = "Color code needs 6 characters 0-9, A-F",
+		["Màu trời không dùng cầu vồng"] = "Sky color has no rainbow mode", ["Đã tắt tiller"] = "Tag turned off",
+		["Bật kèm tiller"] = "Attach tag: on", ["Tắt kèm tiller"] = "Attach tag: off", ["Không thấy kênh này"] = "Channel not found",
+		["Đã gửi tin"] = "Message sent", ["Gửi thất bại"] = "Send failed", ["Đã xóa tin mẫu"] = "Quick message removed",
+		["Tối đa 12 tin mẫu"] = "Maximum 12 quick messages", ["Đã thêm tin mẫu"] = "Quick message added", ["Đã tắt huy hiệu"] = "Badge turned off",
+		["Nền kính tự đổi màu"] = "Glass auto color on", ["Đã dừng đổi màu nền kính"] = "Glass auto color off",
+		["Đang chỉnh màu nền trên"] = "Editing glass top color", ["Tia nắng đã đổi màu"] = "Light ray color changed",
+		["Tia nắng theo màu nền"] = "Light follows glass color", ["Tia nắng đổi màu liên tục"] = "Light ray rainbow on",
+		["Không hỗ trợ lưu file"] = "File saving not supported", ["Đã lưu cài đặt"] = "Settings saved", ["Lưu thất bại"] = "Save failed",
+		["Đã đặt lại mặc định"] = "Reset to defaults", ["Đã bật hiệu ứng game"] = "Game effects on",
+		["Đã khôi phục ánh sáng gốc"] = "Original lighting restored", ["Ánh sáng game đã đổi màu"] = "Game light color changed",
+		["Ánh sáng theo màu trời game"] = "Light follows game sky", ["Đã khóa giờ game"] = "Game time locked", ["Đã mở khóa giờ"] = "Game time unlocked",
+	}
+
+	local PREFIX = {
+		{"Bật ", "Enabled "},
+		{"Tắt ", "Disabled "},
+		{"Chủ đề ", "Theme "},
+		{"Đã áp dụng màu ", "Applied color "},
+	}
+
+	local function TR(text)
+		if LANG ~= "en" or type(text) ~= "string" then return text end
+		local hit = EN[text]
+		if hit then return hit end
+		for _, p in ipairs(PREFIX) do
+			if string.sub(text, 1, #p[1]) == p[1] then
+				local rest = string.sub(text, #p[1] + 1)
+				return p[2] .. (EN[rest] or rest)
+			end
+		end
+		local l, r = string.match(text, "^(.-): (.+)$")
+		if l then
+			return (EN[l] or l) .. ": " .. (EN[r] or r)
+		end
+		return text
+	end
+
+	local function dynamicText()
+		if LANG ~= "en" then return end
+		chanBtn.Text = "Channel: " .. state.channel
+		othersPreview.Text = "Others see: " .. plainPrefix() .. uniApply("Hello!")
+		preview.Text = tagPrefix() .. "Name: " .. chatPaint("Hello everyone!")
+	end
+
+	for _, o in ipairs(gui:GetDescendants()) do
+		if o:IsA("TextLabel") or o:IsA("TextButton") or o:IsA("TextBox") then
+			if o.Text == "Glass Chat" then
+				o.Text = "RidKid Hub"
+			elseif o.Text == "Kính trời • Ánh sáng • Game" then
+				o.Text = "Học Làm Script x Tvàn"
+			elseif LANG == "en" then
+				local t = EN[o.Text]
+				if t then
+					o.Text = t
+				end
+				if o:IsA("TextBox") then
+					local p = EN[o.PlaceholderText]
+					if p then
+						o.PlaceholderText = p
+					end
+				end
+			end
+		end
+	end
+
+	local rawNotify = notify
+	notify = function(text)
+		if text == "Đã mở Glass Chat" then
+			text = "Đã mở RidKid Hub"
+		end
+		rawNotify(TR(text))
+	end
+
+	local rawRefresh = refresh
+	refresh = function()
+		rawRefresh()
+		dynamicText()
+	end
+
+	local rawWrite = writeNow
+	writeNow = function()
+		local okw = rawWrite()
+		if canSave then
+			pcall(function()
+				local d = HttpService:JSONDecode(readfile(FILE))
+				d.lang = saveLang
+				d.askLang = askAgain
+				writefile(FILE, HttpService:JSONEncode(d))
+			end)
+		end
+		return okw
+	end
+
+	if LANG == "en" then
+		local viQuick = {"Xin chào mọi người!", "Cho mình chơi cùng với", "Cảm ơn bạn nhé", "GG, chơi hay quá"}
+		local enQuick = {"Hello everyone!", "Can I play with you?", "Thank you!", "GG, nicely played!"}
+		local same = #quick == #viQuick
+		if same then
+			for i, v in ipairs(viQuick) do
+				if quick[i] ~= v then
+					same = false
+				end
+			end
+		end
+		for i, v in ipairs(enQuick) do
+			DEFAULT_QUICK[i] = v
+		end
+		if same then
+			quick = table.clone(DEFAULT_QUICK)
+			buildQuick()
+		end
+	end
+end
+do
+	local aboutPage = newPage()
+	local idx = #pages
+	local DISCORD = "https://discord.gg/Pfrxphu6M"
+	local TIKTOK1 = "https://www.tiktok.com/@hoclamscript_roblox"
+	local TIKTOK2 = "https://www.tiktok.com/@viet69xhamter"
+	local white = Color3.new(1, 1, 1)
+
+	local tabBtn = make("TextButton", {Size = UDim2.new(1, -4, 0, 32), BackgroundColor3 = white, BackgroundTransparency = 0.88, Text = T("Giới thiệu", "About"), TextColor3 = white, Font = Enum.Font.GothamBold, TextSize = 13, BorderSizePixel = 0, AutoButtonColor = false, LayoutOrder = idx}, side)
+	rounded(tabBtn, 8)
+	tabBtns[idx] = tabBtn
+	tabBtn.Activated:Connect(function()
+		state.tab = idx
+		refresh()
+	end)
+
+	local function note(parent, text, size)
+		return make("TextLabel", {Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Text = text, TextColor3 = Color3.fromRGB(235, 226, 205), Font = Enum.Font.Gotham, TextSize = size or 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, LayoutOrder = nextOrder()}, parent)
+	end
+
+	local function copy(text)
+		local fn = setclipboard or toclipboard
+		if fn then
+			local okc = pcall(fn, text)
+			notify(okc and T("Đã sao chép", "Copied") or T("Sao chép thất bại", "Copy failed"))
+		else
+			notify(T("Không hỗ trợ sao chép, hãy giữ vào ô link để sao chép", "Copy not supported, hold the link box to copy"))
+		end
+	end
+
+	local function linkRow(parent, url)
+		local row = make("Frame", {Size = UDim2.new(1, 0, 0, 30), BackgroundTransparency = 1, LayoutOrder = nextOrder()}, parent)
+		local box = textBox(url, UDim2.new(1, -86, 1, 0), row)
+		box.Text = url
+		box.FocusLost:Connect(function()
+			box.Text = url
+		end)
+		local b = make("TextButton", {Size = UDim2.new(0, 80, 1, 0), Position = UDim2.new(1, -80, 0, 0), BackgroundColor3 = theme.accent, BackgroundTransparency = 0.3, Text = T("Sao chép", "Copy"), TextColor3 = white, Font = Enum.Font.GothamBold, TextSize = 12, BorderSizePixel = 0, AutoButtonColor = false}, row)
+		rounded(b, 8)
+		accentObjs[#accentObjs + 1] = b
+		b.Activated:Connect(function()
+			copy(url)
+		end)
+	end
+
+	local authorCard = card(aboutPage, T("Tác giả", "Author"))
+	make("TextLabel", {Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Text = "Học Làm Script x Tvàn", TextColor3 = Color3.fromRGB(255, 226, 150), Font = Enum.Font.GothamBold, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = nextOrder()}, authorCard)
+	note(authorCard, "RidKid Hub", 12)
+
+	local introCard = card(aboutPage, T("Giới thiệu", "Introduction"))
+	note(introCard, T("Script được tạo ra để phục vụ và giải trí cho người sử dụng. Có các chức năng tùy chỉnh giao diện, hiệu ứng bầu trời, ánh sáng, và tùy chỉnh kiểu chữ, màu sắc, tiller khi nhắn để tạo phong cách như một người sở hữu.", "This script was made to serve and entertain its users. It lets you customize the interface, sky and light effects, and your text style, colors and tag when chatting, to look like a game owner."))
+
+	local dcCard = card(aboutPage, T("Discord hỗ trợ", "Discord support"))
+	note(dcCard, T("Server của tôi: nếu bạn cần giúp đỡ, giúp tối ưu và sửa lỗi script của bạn. Ngoài ra tôi còn tặng code giao diện, chức năng khác...", "My server: get help, optimization and bug fixes for your scripts. I also share free UI code and other features..."))
+	linkRow(dcCard, DISCORD)
+
+	local ttCard = card(aboutPage, "TikTok")
+	note(ttCard, T("Id TikTok mình đăng video:", "My TikTok, where I post videos:"))
+	linkRow(ttCard, TIKTOK1)
+	note(ttCard, T("Follow người cùng làm với mình nha:", "Please follow my partner too:"))
+	linkRow(ttCard, TIKTOK2)
+
+	local guideCard = card(aboutPage, T("Hướng dẫn nhanh", "Quick guide"))
+	note(guideCard, T("• Màu sắc: chọn phong cách VIP 1 chạm, màu tiller, màu chữ chat, màu nền kính và màu tia nắng.", "• Colors: pick a 1-tap VIP style, tag color, chat text color, glass color and light-ray color."))
+	note(guideCard, T("• Tiller: chọn danh hiệu hiện trước tên khi bạn nhắn tin, hoặc tự đặt.", "• Tag: choose the title shown before your name when chatting, or make your own."))
+	note(guideCard, T("• Gửi tin: gửi tin kèm huy hiệu, tiller, kiểu chữ đặc biệt cho người khác thấy; có tin nhắn mẫu.", "• Send: send messages with a badge, tag and special text style that others can see; includes quick messages."))
+	note(guideCard, T("• Nền kính: đổi bầu trời, ánh sáng, độ trong và hiệu ứng của chính bảng này.", "• Glass: change the sky, light, clarity and effects of this hub itself."))
+	note(guideCard, T("• Chữ: bật hiệu ứng chữ (đậm, nghiêng, gạch...), đổi phông chữ, chọn kiểu chữ đặc biệt.", "• Text: turn on text effects (bold, italic, lines...), change the font, pick special text styles."))
+	note(guideCard, T("• Game: đổi màu bầu trời, màu ánh sáng, giờ và hiệu ứng thật trong game (chỉ máy bạn thấy).", "• Game: change the real in-game sky color, light color, time and effects (only you see it)."))
+	note(guideCard, T("• Cài đặt: đổi chủ đề viền, lưu hoặc đặt lại mọi thứ.", "• Settings: change the border theme, save or reset everything."))
+	note(guideCard, T("• Mở lại bảng sau khi bấm ×: gõ /hoclamscriptVip@ trong chat.", "• Reopen the hub after pressing ×: type /hoclamscriptVip@ in chat."))
+
+	local langCard = card(aboutPage, T("Ngôn ngữ", "Language"))
+	local langGrid = grid(langCard, 120, 28, 3)
+	local bVi = pill("Tiếng Việt", langGrid, 1)
+	local bEn = pill("English", langGrid, 2)
+	local bAsk = pill(T("Hỏi mỗi lần chạy", "Ask every run"), langGrid, 3)
+	bAsk.TextSize = 12
+
+	local function paintLang()
+		setActive(bVi, saveLang == "vi")
+		setActive(bEn, saveLang == "en")
+		setActive(bAsk, askAgain)
+	end
+
+	bVi.Activated:Connect(function()
+		saveLang = "vi"
+		paintLang()
+		save()
+		notify(T("Sẽ áp dụng ở lần chạy sau", "Will apply on the next run"))
+	end)
+	bEn.Activated:Connect(function()
+		saveLang = "en"
+		paintLang()
+		save()
+		notify(T("Sẽ áp dụng ở lần chạy sau", "Will apply on the next run"))
+	end)
+	bAsk.Activated:Connect(function()
+		askAgain = not askAgain
+		paintLang()
+		save()
+		notify(askAgain and T("Sẽ hỏi ngôn ngữ mỗi lần chạy", "Will ask for language every run") or T("Sẽ không hỏi lại ngôn ngữ", "Won't ask for language again"))
+	end)
+
+	local prevRefresh = refresh
+	refresh = function()
+		prevRefresh()
+		paintLang()
+	end
+end
+
 refresh()

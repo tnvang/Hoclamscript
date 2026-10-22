@@ -1181,7 +1181,7 @@ do
 end
 
 do
-	local sendCard = card(sendPage, "Gửi tin (người khác sẽ thấy)")
+	local sendCard = card(sendPage, "Gửi tin (người khác có thể thấy)")
 	local sendRow = make("Frame", {Size = UDim2.new(1, 0, 0, 30), BackgroundTransparency = 1, LayoutOrder = nextOrder()}, sendCard)
 	local sendBox = textBox("Gõ tin nhắn...", UDim2.new(1, -66, 1, 0), sendRow)
 	local sendBtn = make("TextButton", {Size = UDim2.new(0, 60, 1, 0), Position = UDim2.new(1, -60, 0, 0), BackgroundColor3 = Color3.fromRGB(80, 200, 120), BackgroundTransparency = 0.3, Text = "Gửi", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 14, BorderSizePixel = 0, AutoButtonColor = false}, sendRow)

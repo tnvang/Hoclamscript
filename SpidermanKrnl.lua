@@ -3805,3 +3805,213 @@ end)
 selectPage(home)
 tween(animScale,0.5,{Scale=1},Enum.EasingStyle.Back)
 end
+do
+local camera=Workspace.CurrentCamera
+local Fx={Enabled=true,Dash=true,Fov=10}
+Bus.Fx=Fx
+if Bus.Sp and Bus.Sp.CFG then Bus.Sp.CFG.SkyRise=5 end
+
+local myGui=playerGui:FindFirstChild("RidKidHub")
+local stale=Workspace:FindFirstChild("SpiderWind")
+if stale then stale:Destroy() end
+local folder=Instance.new("Folder")
+folder.Name="SpiderWind"
+folder.Parent=Workspace
+local terrain=Workspace.Terrain
+local WIND=Color3.fromRGB(235,242,255)
+local stepName="SpiderFx"..tostring(math.floor(os.clock()*1000))
+
+local lines={}
+for i=1,16 do
+local a0=Instance.new("Attachment")
+a0.Parent=terrain
+local a1=Instance.new("Attachment")
+a1.Parent=terrain
+local b=Instance.new("Beam")
+b.Attachment0=a0
+b.Attachment1=a1
+b.Color=ColorSequence.new(WIND)
+b.FaceCamera=true
+b.LightEmission=0.6
+b.LightInfluence=0
+b.Segments=1
+b.Width0=0.05
+b.Width1=0.05
+b.Transparency=NumberSequence.new({
+NumberSequenceKeypoint.new(0,1),
+NumberSequenceKeypoint.new(0.3,0.3),
+NumberSequenceKeypoint.new(0.7,0.3),
+NumberSequenceKeypoint.new(1,1),
+})
+b.Enabled=false
+b.Parent=folder
+lines[i]={a0=a0,a1=a1,b=b,t0=0,life=0.3,wd=0.1,on=false}
+end
+
+local w=0
+local baseFov=camera.FieldOfView
+local applied=false
+local spawnAcc=0
+local lastFire=0
+local done=false
+local emRoot,emAtt,emPuff,emTrail
+
+local function ensureEmitters(root)
+if emRoot==root and emAtt and emAtt.Parent then return end
+emRoot=root
+emAtt=Instance.new("Attachment")
+emAtt.Name="SpiderFxAtt"
+emAtt.Parent=root
+emPuff=Instance.new("ParticleEmitter")
+emPuff.Rate=0
+emPuff.Lifetime=NumberRange.new(0.3,0.5)
+emPuff.Speed=NumberRange.new(4,10)
+emPuff.SpreadAngle=Vector2.new(180,180)
+emPuff.Size=NumberSequence.new({NumberSequenceKeypoint.new(0,1.2),NumberSequenceKeypoint.new(1,3.5)})
+emPuff.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.55),NumberSequenceKeypoint.new(1,1)})
+emPuff.Color=ColorSequence.new(WIND)
+emPuff.LightEmission=0.4
+emPuff.LightInfluence=0
+emPuff.Parent=emAtt
+emTrail=Instance.new("ParticleEmitter")
+emTrail.Rate=0
+emTrail.Lifetime=NumberRange.new(0.3,0.45)
+emTrail.Speed=NumberRange.new(0,1)
+emTrail.SpreadAngle=Vector2.new(25,25)
+emTrail.Rotation=NumberRange.new(0,360)
+emTrail.Size=NumberSequence.new({NumberSequenceKeypoint.new(0,0.9),NumberSequenceKeypoint.new(1,0.1)})
+emTrail.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.65),NumberSequenceKeypoint.new(1,1)})
+emTrail.Color=ColorSequence.new(WIND)
+emTrail.LightEmission=0.35
+emTrail.LightInfluence=0
+emTrail.Parent=emAtt
+end
+
+local function spawnLine(root,vel,spd,now)
+for _,l in ipairs(lines) do
+if not l.on then
+local dir=vel.Magnitude>1 and vel.Unit or root.CFrame.LookVector
+local right=dir:Cross(Vector3.yAxis)
+if right.Magnitude<0.1 then right=Vector3.xAxis end
+right=right.Unit
+local up=right:Cross(dir).Unit
+local center=root.Position+dir*(math.random()*14+3)+right*(math.random()*14-7)+up*(math.random()*10-4)
+local len=math.clamp(spd*0.1,4,16)
+l.a0.WorldPosition=center-dir*(len/2)
+l.a1.WorldPosition=center+dir*(len/2)
+l.t0=now
+l.life=0.22+math.random()*0.12
+l.wd=0.05+math.random()*0.08
+l.on=true
+l.b.Enabled=true
+return
+end
+end
+end
+
+local function dash(root)
+local cam=Workspace.CurrentCamera.CFrame.LookVector
+local flat=Vector3.new(cam.X,0,cam.Z)
+if flat.Magnitude<0.05 then
+local lv=root.CFrame.LookVector
+flat=Vector3.new(lv.X,0,lv.Z)
+end
+if flat.Magnitude<0.05 then return end
+flat=flat.Unit
+local v=root.AssemblyLinearVelocity
+local cur=Vector3.new(v.X,0,v.Z).Magnitude
+local k=math.clamp(1-cur/70,0.25,1)
+root.AssemblyLinearVelocity=v+flat*12*k+Vector3.new(0,8*k,0)
+ensureEmitters(root)
+emPuff:Emit(12)
+end
+
+local function cleanup()
+if done then return end
+done=true
+pcall(function() RunService:UnbindFromRenderStep(stepName) end)
+if applied and camera then camera.FieldOfView=baseFov end
+for _,l in ipairs(lines) do
+l.a0:Destroy()
+l.a1:Destroy()
+end
+folder:Destroy()
+if emAtt and emAtt.Parent then emAtt:Destroy() end
+if Bus.Fx==Fx then Bus.Fx=nil end
+end
+Fx.Cleanup=cleanup
+
+local function frame(dt)
+if not myGui or not myGui.Parent then
+cleanup()
+return
+end
+camera=Workspace.CurrentCamera
+local char=player.Character
+local root=char and char:FindFirstChild("HumanoidRootPart")
+local hum=char and char:FindFirstChildOfClass("Humanoid")
+local now=os.clock()
+local alive=root~=nil and hum~=nil and hum.Health>0
+local use=Fx.Enabled and alive
+local vel=alive and root.AssemblyLinearVelocity or Vector3.zero
+local spd=vel.Magnitude
+local skill=Pose.Mode~=nil or now<Pose.FireUntil+0.6
+local target=0
+if use and skill then target=math.clamp((spd-25)/90,0,1) end
+w+=(target-w)*(1-math.exp(-dt*(target>w and 5 or 3)))
+
+local f=Pose.FireUntil
+if f~=lastFire then
+lastFire=f
+if use and Fx.Dash and f>now and hum:GetState()~=Enum.HumanoidStateType.Seated then
+dash(root)
+end
+end
+
+if camera then
+if w>0.002 then
+if not applied then
+baseFov=camera.FieldOfView
+applied=true
+end
+camera.FieldOfView=baseFov+Fx.Fov*w
+elseif applied then
+camera.FieldOfView=baseFov
+applied=false
+end
+end
+
+if alive then
+ensureEmitters(root)
+emTrail.Rate=28*w
+end
+
+if use and w>0.05 then
+spawnAcc+=dt*(4+34*w)
+local n=0
+while spawnAcc>=1 and n<3 do
+spawnAcc-=1
+n+=1
+spawnLine(root,vel,spd,now)
+end
+else
+spawnAcc=0
+end
+
+for _,l in ipairs(lines) do
+if l.on then
+local k=(now-l.t0)/l.life
+if k>=1 then
+l.on=false
+l.b.Enabled=false
+else
+local wd=l.wd*(1-k)
+l.b.Width0=wd
+l.b.Width1=wd
+end
+end
+end
+end
+
+RunService:BindToRenderStep(stepName,Enum.RenderPriority.Camera.Value+1,frame)
+end

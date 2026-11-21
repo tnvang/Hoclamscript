@@ -3705,133 +3705,550 @@ local function RefreshPlayers()
 
             local ui = CreatePlayerRow(player)
             UpdatePlayerRow(player)
+assert(Parts and Parts[8], "[CheatReveal] Thiếu PHẦN 8/11, hãy dán đủ theo thứ tự")
 
-            ui.Row.Visible = string.find(
-                string.lower(player.Name .. " " .. player.DisplayName),
-                keyword,
-                1,
-                true
-            ) ~= nil
-        end
+local Sim = {Panel = nil, Player = nil, Pos = nil, Conns = {}, ShowOff = false, Collapsed = false}
+
+Sim.Features = {
+    {"SPEED", "Speed Hack"},
+    {"FLY", "Fly"},
+    {"NOCLIP", "Noclip"},
+    {"TELEPORT", "Teleport"},
+    {"INFJUMP", "Infinite Jump"},
+    {"SUPERJUMP", "Super Jump"},
+    {"UNDERGROUND", "Underground"},
+    {"KILLAURA", "Kill Aura"},
+    {"AUTOKILL", "Auto Kill"},
+    {"AUTOCLICK", "Auto Click"},
+    {"REACH", "Reach"},
+    {"HITBOX", "Hitbox Expander"},
+    {"TOOLSPAM", "Tool Spam"},
+    {"TOOLMULTI", "Multi Tool"},
+    {"AUTOFARM", "Auto Farm"},
+    {"SPIN", "Spin"},
+    {"FLING", "Fling"}
+}
+
+function Sim.Close()
+    for _, connection in ipairs(Sim.Conns) do
+        connection:Disconnect()
     end
 
-    UI.PlayerCount.Text = "NGƯỜI CHƠI: " .. total
-    UI.SuspiciousCount.Text = "CÓ DÙNG HACK: " .. hackers
-    UI.SuspiciousCount.TextColor3 = hackers > 0 and Config.Colors.Red or Config.Colors.Gray
-    UI.Empty.Visible = total == 0
-end
+    table.clear(Sim.Conns)
 
-local function SetProgress(percent, message)
-    TweenService:Create(UI.ProgressFill, TweenInfo.new(0.15), {
-        Size = UDim2.new(math.clamp(percent / 100, 0, 1), 0, 1, 0)
-    }):Play()
-
-    if message then
-        UI.ProgressText.Text = message
-    end
-end
-
-local function CollectTargets()
-    local list = {}
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            table.insert(list, player)
-        end
+    if Sim.Panel then
+        Sim.Pos = {X = Sim.Panel.Position.X.Offset, Y = Sim.Panel.Position.Y.Offset}
+        Sim.Panel:Destroy()
     end
 
-    return list
+    Sim.Panel = nil
+    Sim.Player = nil
 end
 
-local function CountPeers(pool, player, test)
-    local count = 0
+function Sim.Clamp(panel, width, height)
+    local area = UI.Gui.AbsoluteSize
+    local x = math.clamp(panel.Position.X.Offset, 0, math.max(area.X - width, 0))
+    local y = math.clamp(panel.Position.Y.Offset, 0, math.max(area.Y - height, 0))
 
-    for other, otherData in pairs(pool) do
-        if other ~= player and test(otherData) then
-            count += 1
-        end
+    panel.Position = UDim2.fromOffset(x, y)
+end
+
+function Sim.Value(key, evidence, data)
+    if key == "SPEED" then
+        local limit = math.max(data.Allowed, 1)
+        return "tốc độ " .. FormatNumber(data.PeakSpeed) .. " / cho phép " .. FormatNumber(data.Allowed), math.clamp(data.PeakSpeed / (limit * 3), 0.08, 1)
+    elseif key == "FLY" or key == "SUPERJUMP" then
+        return "độ cao " .. FormatNumber(data.GainMax) .. " studs", nil
     end
 
-    return count
+    return "xác nhận " .. evidence.Count .. "/" .. evidence.Need, nil
 end
 
-local function Drop(data, id, note)
-    data.Evidence[id] = nil
-    table.insert(data.Notes, note)
+function Sim.Header(parent, order, text, color)
+    return Create("TextLabel", {
+        LayoutOrder = order,
+        Size = UDim2.new(1, -2, 0, 18),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = color,
+        TextSize = 10,
+        Font = Enum.Font.GothamBlack,
+        TextXAlignment = Enum.TextXAlignment.Left
+    }, parent)
 end
 
-local function Note(data, note)
-    table.insert(data.Notes, note)
+function Sim.Row(parent, order, label, sub, on, delay, fraction)
+    local height = 24
+
+    if on then
+        height = fraction and 46 or 34
+    end
+
+    local row = Create("Frame", {
+        LayoutOrder = order,
+        Size = UDim2.new(1, -2, 0, height),
+        BackgroundColor3 = Config.Colors.Glass2,
+        BackgroundTransparency = on and 0.35 or 0.7,
+        BorderSizePixel = 0
+    }, parent)
+
+    Corner(row, 7)
+    Stroke(row, on and Config.Colors.Red or Color3.fromRGB(255, 255, 255), on and 0.3 or 0.92)
+
+    Create("TextLabel", {
+        Size = UDim2.new(1, -52, 0, on and 16 or 24),
+        Position = UDim2.fromOffset(8, on and 3 or 0),
+        BackgroundTransparency = 1,
+        Text = label,
+        TextColor3 = on and Config.Colors.White or Config.Colors.Gray,
+        TextSize = 11,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd
+    }, row)
+
+    if on and sub then
+        Create("TextLabel", {
+            Size = UDim2.new(1, -52, 0, 12),
+            Position = UDim2.fromOffset(8, 19),
+            BackgroundTransparency = 1,
+            Text = sub,
+            TextColor3 = Config.Colors.Orange,
+            TextSize = 8,
+            Font = Enum.Font.Gotham,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextTruncate = Enum.TextTruncate.AtEnd
+        }, row)
+    end
+
+    if on and fraction then
+        local back = Create("Frame", {
+            Size = UDim2.new(1, -60, 0, 4),
+            Position = UDim2.fromOffset(8, 36),
+            BackgroundColor3 = Config.Colors.Black,
+            BackgroundTransparency = 0.3,
+            BorderSizePixel = 0
+        }, row)
+
+        Corner(back, 3)
+
+        local fill = Create("Frame", {
+            Size = UDim2.new(0, 0, 1, 0),
+            BackgroundColor3 = Config.Colors.Red,
+            BorderSizePixel = 0
+        }, back)
+
+        Corner(fill, 3)
+
+        task.delay(delay, function()
+            if fill.Parent then
+                TweenService:Create(
+                    fill,
+                    TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {Size = UDim2.new(fraction, 0, 1, 0)}
+                ):Play()
+            end
+        end)
+    end
+
+    local track = Create("Frame", {
+        AnchorPoint = Vector2.new(1, 0),
+        Position = UDim2.new(1, -8, 0, on and 8 or 4),
+        Size = UDim2.fromOffset(30, 16),
+        BackgroundColor3 = Color3.fromRGB(70, 74, 90),
+        BorderSizePixel = 0
+    }, row)
+
+    Corner(track, 8)
+
+    local knob = Create("Frame", {
+        Position = UDim2.fromOffset(2, 2),
+        Size = UDim2.fromOffset(12, 12),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel = 0
+    }, track)
+
+    Corner(knob, 6)
+
+    if on then
+        task.delay(delay, function()
+            if knob.Parent then
+                local info = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+                TweenService:Create(knob, info, {Position = UDim2.fromOffset(16, 2)}):Play()
+                TweenService:Create(track, info, {BackgroundColor3 = Config.Colors.Green}):Play()
+            end
+        end)
+    end
+
+    return row
 end
 
-local function ApplyPeerRules(targets, pool)
-    for _, player in ipairs(targets) do
-        local data = Data[player]
+function Sim.Show(player)
+    Sim.Close()
 
-        if data then
-            local speed = data.Evidence.SPEED
+    local data = ViewData(player)
+    local active = {}
+    local hidden = {}
+    local activeCount = 0
 
-            if speed and speed.Count >= speed.Need then
-                local peak = data.PeakSpeed
-                local peers = CountPeers(pool, player, function(other)
-                    return other.PeakSpeed >= peak * Config.PeerRatio
-                end)
-                local movers = 0
+    if data.Scanned then
+        for _, evidence in ipairs(data.Details) do
+            if evidence.Confirmed and evidence.Weight >= 18 then
+                local key = string.match(evidence.Id, "^%u+")
 
-                for _, other in pairs(pool) do
-                    if (other.Moved or 0) >= Config.MinMoved then
-                        movers += 1
+                if KnownHacks[key] then
+                    local current = active[key]
+
+                    if not current then
+                        activeCount += 1
                     end
-                end
 
-                if peers >= Config.PeerCount and peers >= movers * 0.4 then
-                    if peak <= data.Allowed * Config.PeerBorderline then
-                        Drop(data, "SPEED", "Đã loại bỏ kết luận Speed Hack: có " .. peers .. " người chơi khác cũng đạt tốc độ tương tự (≥ " .. FormatNumber(peak * Config.PeerRatio) .. " studs/s) và tốc độ chỉ vượt ngưỡng ít, nhiều khả năng là nút chạy nhanh của game.")
-                    else
-                        Note(data, "Có " .. peers .. " người chơi khác cũng nhanh tương tự, nhưng tốc độ người này vượt hẳn ngưỡng nên vẫn giữ kết luận Speed Hack.")
+                    if not current or evidence.Count > current.Count then
+                        active[key] = evidence
                     end
-                end
-            end
-
-            local jump = data.Evidence.INFJUMP
-
-            if jump and jump.Count >= jump.Need then
-                local peers = CountPeers(pool, player, function(other)
-                    return other.AirJumpMax >= 2
-                end)
-
-                if peers >= Config.JumpPeerCount then
-                    Drop(data, "INFJUMP", "Đã loại bỏ kết luận Infinite Jump: có " .. peers .. " người chơi khác cũng nhảy nhiều lần trên không, nhiều khả năng là cơ chế game.")
-                end
-            end
-
-            local superJump = data.Evidence.SUPERJUMP
-
-            if superJump and superJump.Count >= superJump.Need then
-                local gain = data.GainMax
-                local peers = CountPeers(pool, player, function(other)
-                    return other.GainMax >= gain * 0.9
-                end)
-
-                if peers >= Config.JumpPeerCount then
-                    Drop(data, "SUPERJUMP", "Đã loại bỏ kết luận Super Jump: có " .. peers .. " người chơi khác cũng nhảy cao tương tự, nhiều khả năng là bệ nhảy hoặc cơ chế game.")
-                end
-            end
-
-            local aura = data.Evidence.KILLAURA
-
-            if aura and aura.Count >= aura.Need then
-                local peers = CountPeers(pool, player, function(other)
-                    return other.AuraBursts >= 1
-                end)
-
-                if peers >= 2 then
-                    Drop(data, "KILLAURA", "Đã loại bỏ kết luận Kill Aura: có " .. peers .. " người chơi khác cũng gây sát thương diện rộng, nhiều khả năng là kỹ năng của game.")
+                else
+                    table.insert(hidden, evidence)
                 end
             end
         end
+
+        if activeCount + #hidden == 0 and data.Score >= Config.HackThreshold then
+            table.insert(hidden, {Text = "nhiều dấu hiệu phụ cộng dồn vượt " .. Config.HackThreshold .. "%", Count = 1, Need = 1})
+        end
     end
+
+    local total = activeCount + #hidden
+    local area = UI.Gui.AbsoluteSize
+    local width = math.min(270, math.max(area.X - 16, 200))
+    local maxHeight = math.min(300, math.max(area.Y - 16, 140))
+    local height = 120
+    local startX = math.max((area.X - width) / 2, 8)
+    local startY = math.max((area.Y - maxHeight) / 2, 8)
+
+    if Sim.Pos then
+        startX = Sim.Pos.X
+        startY = Sim.Pos.Y
+    end
+
+    local panel = Create("Frame", {
+        Name = "SimPanel",
+        Size = UDim2.fromOffset(width, Sim.Collapsed and 38 or height),
+        Position = UDim2.fromOffset(startX, startY),
+        BackgroundColor3 = Config.Colors.Black,
+        BackgroundTransparency = 0.05,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        ZIndex = 70
+    }, UI.Gui)
+
+    Glass(panel, 14, true)
+    Sim.Clamp(panel, width, Sim.Collapsed and 38 or height)
+
+    Sim.Panel = panel
+    Sim.Player = player
+
+    local header = Create("Frame", {
+        Name = "SimHeader",
+        Size = UDim2.new(1, 0, 0, 38),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0
+    }, panel)
+
+    local avatar = Create("ImageLabel", {
+        Size = UDim2.fromOffset(26, 26),
+        Position = UDim2.fromOffset(7, 6),
+        BackgroundColor3 = Config.Colors.Glass,
+        Image = "",
+        BorderSizePixel = 0
+    }, header)
+
+    Corner(avatar, 13)
+
+    task.spawn(function()
+        local ok, image = pcall(function()
+            return Players:GetUserThumbnailAsync(
+                player.UserId,
+                Enum.ThumbnailType.HeadShot,
+                Enum.ThumbnailSize.Size100x100
+            )
+        end)
+
+        if ok and avatar.Parent then
+            avatar.Image = image
+        end
+    end)
+
+    local title = Create("TextLabel", {
+        Size = UDim2.new(1, -106, 0, 14),
+        Position = UDim2.fromOffset(40, 4),
+        BackgroundTransparency = 1,
+        Text = "SCRIPT HUB  •  MÔ PHỎNG",
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 10,
+        Font = Enum.Font.GothamBlack,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd
+    }, header)
+
+    Create("UIGradient", {
+        Color = ColorSequence.new(Config.Colors.Violet, Config.Colors.Accent)
+    }, title)
+
+    Create("TextLabel", {
+        Size = UDim2.new(1, -106, 0, 12),
+        Position = UDim2.fromOffset(40, 19),
+        BackgroundTransparency = 1,
+        Text = "@" .. player.Name,
+        TextColor3 = Config.Colors.White,
+        TextSize = 9,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd
+    }, header)
+
+    local collapse = Create("TextButton", {
+        Size = UDim2.fromOffset(24, 22),
+        Position = UDim2.new(1, -58, 0, 8),
+        BackgroundColor3 = Config.Colors.Glass2,
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+        Text = Sim.Collapsed and "+" or "—",
+        TextColor3 = Config.Colors.White,
+        TextSize = 13,
+        Font = Enum.Font.GothamBold
+    }, header)
+
+    Corner(collapse, 6)
+    Stroke(collapse, Color3.fromRGB(255, 255, 255), 0.8)
+
+    local close = Create("TextButton", {
+        Size = UDim2.fromOffset(24, 22),
+        Position = UDim2.new(1, -30, 0, 8),
+        BackgroundColor3 = Config.Colors.Red,
+        BackgroundTransparency = 0.4,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+        Text = "X",
+        TextColor3 = Config.Colors.White,
+        TextSize = 11,
+        Font = Enum.Font.GothamBold
+    }, header)
+
+    Corner(close, 6)
+    Stroke(close, Color3.fromRGB(255, 255, 255), 0.8)
+
+    local list = Create("ScrollingFrame", {
+        Size = UDim2.new(1, -12, 1, -62),
+        Position = UDim2.fromOffset(6, 40),
+        BackgroundColor3 = Config.Colors.Glass,
+        BackgroundTransparency = 0.5,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 3,
+        ScrollBarImageColor3 = Config.Colors.Accent,
+        CanvasSize = UDim2.new(),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        Visible = not Sim.Collapsed
+    }, panel)
+
+    Corner(list, 9)
+
+    local layout = Create("UIListLayout", {
+        Padding = UDim.new(0, 4),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    }, list)
+
+    Create("UIPadding", {
+        PaddingTop = UDim.new(0, 5),
+        PaddingBottom = UDim.new(0, 5),
+        PaddingLeft = UDim.new(0, 5),
+        PaddingRight = UDim.new(0, 5)
+    }, list)
+
+    local note = Create("TextLabel", {
+        Size = UDim2.new(1, -12, 0, 14),
+        Position = UDim2.new(0, 6, 1, -18),
+        BackgroundTransparency = 1,
+        Text = "Mô phỏng từ dữ liệu quét, không phải giao diện hack thật.",
+        TextColor3 = Config.Colors.Gray,
+        TextSize = 8,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        Visible = not Sim.Collapsed
+    }, panel)
+
+    if data.Scanning then
+        Sim.Header(list, 1, "ĐANG QUÉT, CHỜ KẾT QUẢ...", Config.Colors.Yellow)
+    elseif not data.Scanned then
+        Sim.Header(list, 1, "CHƯA QUÉT (BẤM TRA)", Config.Colors.Gray)
+    elseif total == 0 then
+        Sim.Header(list, 1, "KHÔNG CÓ HACK NÀO ĐƯỢC XÁC NHẬN", Config.Colors.Green)
+    else
+        Sim.Header(list, 1, "ĐANG BẬT (" .. total .. ")", Config.Colors.Red)
+    end
+
+    local order = 1
+    local delay = 0.2
+
+    for _, feature in ipairs(Sim.Features) do
+        local evidence = active[feature[1]]
+
+        if evidence then
+            order += 1
+
+            local value, fraction = Sim.Value(feature[1], evidence, data)
+
+            Sim.Row(list, order, feature[2], "@" .. player.Name .. "  •  " .. value, true, delay, fraction)
+            delay += 0.15
+        end
+    end
+
+    for index, evidence in ipairs(hidden) do
+        order += 1
+
+        Sim.Row(list, order, "Chức năng ẩn #" .. index, "@" .. player.Name .. "  •  " .. evidence.Text, true, delay, nil)
+        delay += 0.15
+    end
+
+    local offRows = {}
+    local offCount = 0
+
+    for _, feature in ipairs(Sim.Features) do
+        if not active[feature[1]] then
+            offCount += 1
+        end
+    end
+
+    local offHeader = Create("Frame", {
+        LayoutOrder = 500,
+        Size = UDim2.new(1, -2, 0, 20),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0
+    }, list)
+
+    Create("TextLabel", {
+        Size = UDim2.new(1, -60, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "ĐANG TẮT (" .. offCount .. ")",
+        TextColor3 = Config.Colors.Gray,
+        TextSize = 10,
+        Font = Enum.Font.GothamBlack,
+        TextXAlignment = Enum.TextXAlignment.Left
+    }, offHeader)
+
+    local offToggle = Create("TextButton", {
+        AnchorPoint = Vector2.new(1, 0.5),
+        Size = UDim2.fromOffset(50, 16),
+        Position = UDim2.new(1, -2, 0.5, 0),
+        BackgroundColor3 = Config.Colors.Accent,
+        BackgroundTransparency = 0.5,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+        Text = Sim.ShowOff and "ẨN" or "HIỆN",
+        TextColor3 = Config.Colors.White,
+        TextSize = 9,
+        Font = Enum.Font.GothamBold
+    }, offHeader)
+
+    Corner(offToggle, 6)
+
+    local offOrder = 500
+
+    for _, feature in ipairs(Sim.Features) do
+        if not active[feature[1]] then
+            offOrder += 1
+
+            local row = Sim.Row(list, offOrder, feature[2], nil, false, 0, nil)
+            row.Visible = Sim.ShowOff
+            table.insert(offRows, row)
+        end
+    end
+
+    offToggle.MouseButton1Click:Connect(function()
+        Sim.ShowOff = not Sim.ShowOff
+        offToggle.Text = Sim.ShowOff and "ẨN" or "HIỆN"
+
+        for _, row in ipairs(offRows) do
+            row.Visible = Sim.ShowOff
+        end
+    end)
+
+    local function Fit()
+        if not panel.Parent then
+            return
+        end
+
+        height = math.clamp(40 + layout.AbsoluteContentSize.Y + 10 + 22, 110, maxHeight)
+
+        if not Sim.Collapsed then
+            panel.Size = UDim2.fromOffset(width, height)
+            Sim.Clamp(panel, width, height)
+        end
+    end
+
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(Fit)
+    task.defer(Fit)
+
+    collapse.MouseButton1Click:Connect(function()
+        Sim.Collapsed = not Sim.Collapsed
+        list.Visible = not Sim.Collapsed
+        note.Visible = not Sim.Collapsed
+        collapse.Text = Sim.Collapsed and "+" or "—"
+
+        local current = Sim.Collapsed and 38 or height
+        panel.Size = UDim2.fromOffset(width, current)
+        Sim.Clamp(panel, width, current)
+    end)
+
+    close.MouseButton1Click:Connect(Sim.Close)
+
+    local dragging = false
+    local dragStart = nil
+    local origin = nil
+    local dragInput = nil
+
+    header.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+
+            dragging = true
+            dragStart = input.Position
+            origin = panel.Position
+
+            if input.UserInputType == Enum.UserInputType.Touch then
+                dragInput = input
+            end
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    header.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    table.insert(Sim.Conns, UserInputService.InputChanged:Connect(function(input)
+        if not dragging or input ~= dragInput or not panel.Parent then
+            return
+        end
+
+        local delta = input.Position - dragStart
+        local current = Sim.Collapsed and 38 or height
+
+        panel.Position = UDim2.fromOffset(origin.X.Offset + delta.X, origin.Y.Offset + delta.Y)
+        Sim.Clamp(panel, width, current)
+    end))
 end
+
+Parts[9] = true
 
 Parts[10] = true
 assert(Parts and Parts[10], "[CheatReveal] Thiếu PHẦN 10/11, hãy dán đủ theo thứ tự")

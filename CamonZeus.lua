@@ -3124,7 +3124,7 @@ function Spec.Update()
     local details = UI.Details
     local detailOpen = details ~= nil and details.Player == player and details.Panel.Parent ~= nil
 
-    bar.Sim.Text = simOpen and "ĐÓNG CHECK" or "CHECK KĨ"
+    bar.Sim.Text = simOpen and "ĐÓNG QUAN SÁT" or "CHECK KĨ"
     bar.Detail.Text = detailOpen and "ĐÓNG CHI TIẾT" or "CHI TIẾT"
     bar.Scan.Text = State.Scanning and ("QUÉT " .. math.floor(State.Progress) .. "%") or "TRA"
 end
@@ -3307,7 +3307,7 @@ function Sim.MakeRow(parent, index, entry, player, data, delay, states)
         TextTruncate = Enum.TextTruncate.AtEnd
     }, row)
 
-    local subText = "@" .. player.Name .. "  •  bật thủ công (chỉ mô phỏng)"
+    local subText = "@" .. player.Name .. "  •   QUÉT LUỒN"
 
     if detected then
         subText = "@" .. player.Name .. "  •  " .. value
@@ -3569,7 +3569,7 @@ function Sim.Show(player)
         Size = UDim2.new(1, -106, 0, 14),
         Position = UDim2.fromOffset(40, 4),
         BackgroundTransparency = 1,
-        Text = "SCRIPT HUB  •  MÔ PHỎNG",
+        Text = "SCRIPT HUB  •  LOẠI BỎ",
         TextColor3 = Color3.fromRGB(255, 255, 255),
         TextSize = 10,
         Font = Enum.Font.GothamBlack,

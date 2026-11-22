@@ -3307,7 +3307,7 @@ function Sim.MakeRow(parent, index, entry, player, data, delay, states)
         TextTruncate = Enum.TextTruncate.AtEnd
     }, row)
 
-    local subText = "@" .. player.Name .. "  •   QUÉT LUỒN"
+    local subText = "@" .. player.Name .. "  •   CHÍNH XÁC"
 
     if detected then
         subText = "@" .. player.Name .. "  •  " .. value
@@ -3665,7 +3665,7 @@ function Sim.Show(player)
         Visible = not Sim.Collapsed
     }, panel)
 
-    local statusText = "PHÁT HIỆN " .. total .. " CHỨC NĂNG HACK"
+    local statusText = "PHÁT HIỆN " .. total .. " HACK NGHIÊM TRỌNG"
     local statusColor = Config.Colors.Red
 
     if data.Scanning then

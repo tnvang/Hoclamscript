@@ -2905,7 +2905,7 @@ function Spec.GetBar()
         Position = UDim2.fromOffset(10, 78),
         BackgroundColor3 = Config.Colors.Red,
         BackgroundTransparency = 0.5,
-        Text = "MÔ PHỎNG",
+        Text = "Check",
         TextColor3 = Config.Colors.White,
         TextSize = 9,
         Font = Enum.Font.GothamBold
@@ -3124,7 +3124,7 @@ function Spec.Update()
     local details = UI.Details
     local detailOpen = details ~= nil and details.Player == player and details.Panel.Parent ~= nil
 
-    bar.Sim.Text = simOpen and "ĐÓNG MÔ PHỎNG" or "MÔ PHỎNG"
+    bar.Sim.Text = simOpen and "ĐÓNG CHECK" or "CHECK KĨ"
     bar.Detail.Text = detailOpen and "ĐÓNG CHI TIẾT" or "CHI TIẾT"
     bar.Scan.Text = State.Scanning and ("QUÉT " .. math.floor(State.Progress) .. "%") or "TRA"
 end
@@ -3656,7 +3656,7 @@ function Sim.Show(player)
         Size = UDim2.new(1, -12, 0, 14),
         Position = UDim2.new(0, 6, 1, -18),
         BackgroundTransparency = 1,
-        Text = "Bật/tắt chỉ là mô phỏng, không ảnh hưởng người chơi.",
+        Text = "Bật/tắt chỉ là Check, không ảnh hưởng người chơi.",
         TextColor3 = Config.Colors.Gray,
         TextSize = 8,
         Font = Enum.Font.Gotham,
@@ -4027,7 +4027,7 @@ local function CreatePlayerRow(player)
         Position = UDim2.fromOffset(280, 85),
         BackgroundColor3 = Config.Colors.Red,
         BackgroundTransparency = 0.45,
-        Text = "MÔ PHỎNG",
+        Text = "CHECK KĨ",
         TextColor3 = Config.Colors.White,
         TextSize = 9,
         Font = Enum.Font.GothamBold
@@ -4101,7 +4101,7 @@ local function UpdatePlayerRow(player)
         ui.Percent.TextColor3 = color
 
         if active then
-            ui.Tags.Text = "Phát hiện " .. math.max(1, #data.Known + data.Unknown) .. " chức năng hack. Bấm MÔ PHỎNG để xem bảng của " .. player.Name
+            ui.Tags.Text = "Phát hiện " .. math.max(1, #data.Known + data.Unknown) .. " chức năng hack. Bấm Check để xem bảng của " .. player.Name
             ui.Tags.TextColor3 = Config.Colors.Red
         elseif (data.Moved or 0) < Config.MinMoved then
             ui.Tags.Text = "Người này chưa chạy đủ lâu trong lúc quét. Hãy quét lại khi họ đang di chuyển."
